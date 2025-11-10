@@ -24,11 +24,6 @@ public class ComplimentTemplate {
     @Column(nullable = false, columnDefinition = "text")
     private String text;
 
-    private String locale = "ko";
-    private String tone = "warm";
-    private String visibility = "public";
-    private Boolean active = true;
-
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

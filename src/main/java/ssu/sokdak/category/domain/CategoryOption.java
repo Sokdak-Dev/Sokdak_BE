@@ -23,15 +23,6 @@ public class CategoryOption {
     @Column(nullable = false)
     private String label;
 
-    private String description;
-
-    private Double weight = 1.000;
-
-    @Column(columnDefinition = "json")
-    private String tags = "{}";
-
-    private Boolean active = true;
-
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
