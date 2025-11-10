@@ -32,6 +32,13 @@ dependencies {
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	// Spring AI
+	implementation(platform("org.springframework.ai:spring-ai-bom:1.0.3"))
+	// Spring AI: Ollama
+	implementation("org.springframework.ai:spring-ai-starter-model-ollama")
+	// Spring AI: Qdrant
+	implementation("org.springframework.ai:spring-ai-starter-vector-store-qdrant")
 }
 
 tasks.named('test') {
