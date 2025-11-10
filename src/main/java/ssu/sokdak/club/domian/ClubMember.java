@@ -27,6 +27,7 @@ public class ClubMember {
     private User user;
 
     private String role = "member";
+
     private Boolean active = true;
 
     @Column(name = "joined_at")
