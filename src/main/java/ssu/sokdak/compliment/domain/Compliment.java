@@ -46,4 +46,8 @@ public class Compliment {
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
     }
+
+    public void updateReceiver(User receiver){
+        this.receiver = receiver;
+    }
 }
