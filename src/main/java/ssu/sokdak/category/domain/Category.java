@@ -16,13 +16,5 @@ public class Category {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String code; // e.g. LEADERSHIP
-
-    @Column(name = "name_ko", nullable = false)
-    private String nameKo;
-
-    @Column(name = "name_en")
-    private String nameEn;
-
-    private String description;
+    private String code; // e.g. 리더십
 }
