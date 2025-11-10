@@ -15,6 +15,7 @@ import ssu.sokdak.club.repository.ClubMemberRepository;
 import ssu.sokdak.compliment.domain.Compliment;
 import ssu.sokdak.compliment.domain.ComplimentTemplate;
 import ssu.sokdak.compliment.dto.ComplimentGenerateResponse;
+import ssu.sokdak.compliment.dto.ComplimentSelectRequest;
 import ssu.sokdak.compliment.repository.ComplimentRepository;
 import ssu.sokdak.compliment.repository.ComplimentTemplateRepository;
 import ssu.sokdak.user.domain.User;
@@ -160,5 +161,16 @@ public class ComplimentService {
         }
 
         return responses;
+    }
+
+    public void selectComplimentUser(ComplimentSelectRequest request) {
+
+        Compliment compliment = complimentRepository.findById(request.getComplimentId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "칭찬을 찾을 수 없습니다."));
+
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
+
+        compliment.updateReceiver(user);
     }
 }
