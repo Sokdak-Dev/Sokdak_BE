@@ -22,7 +22,8 @@ public class ComplimentIndexService {
         String embeddingText = complimentTemplate.getText();
 
         Map<String, Object> metadata = new HashMap<>();
-        metadata.put("category", complimentTemplate.getCategory());
+        metadata.put("category", complimentTemplate.getCategory().getCode());
+        metadata.put("templateId", complimentTemplate.getId());
 
         Document doc = Document.builder()
                 .id(UUID.randomUUID().toString())

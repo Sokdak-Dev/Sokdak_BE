@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import ssu.sokdak.club.domain.ClubMember;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface ClubMemberRepository extends JpaRepository<ClubMember, Long> {
@@ -20,4 +21,16 @@ public interface ClubMemberRepository extends JpaRepository<ClubMember, Long> {
     @Modifying
     @Query("delete from ClubMember m where m.club.id = :clubId")
     void deleteAllByClubId(@Param("clubId") Long clubId);
+
+    @Query("""
+        select distinct cm.user.id
+        from ClubMember cm
+        where cm.club.id = :clubId
+          and cm.active = true
+          and cm.user.id <> :excludeUserId
+    """)
+    List<Long> findActiveMemberIdsExcluding(
+            @Param("clubId") Long clubId,
+            @Param("excludeUserId") Long excludeUserId);
+
 }
