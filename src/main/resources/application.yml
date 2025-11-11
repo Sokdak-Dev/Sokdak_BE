@@ -16,7 +16,7 @@ spring:
         port: 6334
         use-tls: false
         collection-name: prompts
-        initialize-schema: true
+        initialize-schema: false
 
 server:
   port: 8080
