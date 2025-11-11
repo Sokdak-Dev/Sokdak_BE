@@ -1,6 +1,7 @@
 package ssu.sokdak.compliment.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+
 import org.springframework.data.jpa.repository.Query;
 import ssu.sokdak.compliment.domain.Compliment;
 
@@ -23,4 +24,5 @@ public interface ComplimentRepository extends JpaRepository<Compliment, Long> {
         GROUP BY DATE(c.created_at)
         """, nativeQuery = true)
     List<java.sql.Date> distinctSentDates(Long userId, LocalDateTime from, LocalDateTime to);
+
 }
