@@ -31,6 +31,15 @@ public interface ClubMemberRepository extends JpaRepository<ClubMember, Long> {
     """)
     List<Long> findActiveMemberIdsExcluding(
             @Param("clubId") Long clubId,
-            @Param("excludeUserId") Long excludeUserId);
+            @Param("excludeUserId") Long excludeUserId
+    );
 
+    // 동아리 내 "승인된" 멤버들의 userId 목록 조회 -> 승인된 멤버수 + 이름 목록용
+    @Query("""
+        select cm.user.id
+        from ClubMember cm
+        where cm.club.id = :clubId
+          and cm.active = true
+    """)
+    List<Long> findActiveMemberIdsByClubId(@Param("clubId") Long clubId);
 }

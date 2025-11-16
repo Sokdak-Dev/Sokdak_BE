@@ -9,6 +9,7 @@ import ssu.sokdak.club.dto.ClubDtos.CreateClubResponse;
 import ssu.sokdak.club.dto.ClubDtos.DeleteClubResponse;
 import ssu.sokdak.club.dto.ClubDtos.JoinClubResponse;
 import ssu.sokdak.club.dto.ClubDtos.RejectClubMemberResponse;
+import ssu.sokdak.club.dto.ClubDtos.ClubDetailResponse;
 import ssu.sokdak.club.service.ClubService;
 
 // 헤더에서 userId를 받고, 로그인 구현 후에 교체 필요
@@ -40,6 +41,14 @@ public class ClubController {
         return ResponseEntity.ok(new DeleteClubResponse(clubId, "deleted"));
     }
 
+    // 동아리 상세 조회
+    @GetMapping("/{clubId}")
+    public ResponseEntity<ClubDetailResponse> getClubDetail(
+            @PathVariable Long clubId
+    ) {
+        ClubDetailResponse response = clubService.getClubDetail(clubId);
+        return ResponseEntity.ok(response);
+    }
 
     // 동아리 가입 신청
     @PostMapping("/{clubId}/join")

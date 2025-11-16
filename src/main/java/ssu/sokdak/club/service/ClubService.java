@@ -11,12 +11,17 @@ import ssu.sokdak.club.dto.ClubDtos.ApproveClubMemberResponse;
 import ssu.sokdak.club.dto.ClubDtos.CreateClubRequest;
 import ssu.sokdak.club.dto.ClubDtos.JoinClubResponse;
 import ssu.sokdak.club.dto.ClubDtos.RejectClubMemberResponse;
+import ssu.sokdak.club.dto.ClubDtos.ClubDetailMember;
+import ssu.sokdak.club.dto.ClubDtos.ClubDetailResponse;
 import ssu.sokdak.club.repository.ClubMemberRepository;
 import ssu.sokdak.club.repository.ClubRepository;
 import ssu.sokdak.user.domain.User;
 import ssu.sokdak.user.repository.UserRepository;
+import ssu.sokdak.user.repository.UserRepository.UserNameView;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 @Service
@@ -168,6 +173,49 @@ public class ClubService {
                 clubId,
                 targetUserId,
                 "REJECTED"
+        );
+    }
+
+    // 동아리 상세 조회 -> Club 엔티티 + 승인된 멤버수 + 리스트
+    @Transactional(readOnly = true)
+    public ClubDetailResponse getClubDetail(Long clubId) {
+        // 1) 동아리 존재 여부 확인
+        Club club = clubRepository.findById(clubId)
+                .orElseThrow(() -> new NoSuchElementException("존재하지 않는 동아리입니다."));
+
+        // 2) 승인된 멤버의 userId 목록 조회
+        List<Long> activeMemberIds = clubMemberRepository.findActiveMemberIdsByClubId(clubId);
+
+        // 3) 승인된 멤버가 없는 경우: 카운트 0, 빈 리스트로 응답
+        if (activeMemberIds.isEmpty()) {
+            return new ClubDetailResponse(
+                    club.getId(),
+                    club.getName(),
+                    club.getDescription(),
+                    0,
+                    List.of(),
+                    club.getCreatedAt(),
+                    club.getUpdatedAt()
+            );
+        }
+
+        // 4) userId 목록으로 이름 projection 조회
+        List<UserNameView> views = userRepository.findByIdIn(activeMemberIds);
+
+        // 5) 이름 오름차순 정렬 후 응답용 멤버 DTO로 매핑
+        List<ClubDetailMember> members = views.stream()
+                .sorted(Comparator.comparing(UserNameView::getName))
+                .map(v -> new ClubDetailMember(v.getId(), v.getName()))
+                .toList();
+
+        return new ClubDetailResponse(
+                club.getId(),
+                club.getName(),
+                club.getDescription(),
+                members.size(),
+                members,
+                club.getCreatedAt(),
+                club.getUpdatedAt()
         );
     }
 }
