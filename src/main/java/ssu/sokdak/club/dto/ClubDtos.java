@@ -41,7 +41,7 @@ public class ClubDtos {
             String name
     ) { }
 
-    // 동아리 상세 조회 응답 -> 승인된 멤버수 + 리스트 포함
+    // 동아리 상세 조회 응답 -> 동아리 전체 요약 + 승인된 멤버수 + 리스트 포함
     public record ClubDetailResponse(
             Long clubId,
             String name,
@@ -50,5 +50,13 @@ public class ClubDtos {
             List<ClubDetailMember> activeMembers,
             LocalDateTime createdAt,
             LocalDateTime updatedAt
+    ) { }
+
+    // 멤버 목록 전용 응답 (승인/대기 공통)
+    public record ClubMembersResponse(
+            Long clubId,
+            boolean active,
+            int count,
+            List<ClubDetailMember> members
     ) { }
 }
