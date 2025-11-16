@@ -8,6 +8,9 @@ import org.springframework.web.server.ResponseStatusException;
 import ssu.sokdak.club.domain.Club;
 import ssu.sokdak.club.domain.ClubMember;
 import ssu.sokdak.club.dto.ClubDtos.ApproveClubMemberResponse;
+import ssu.sokdak.club.dto.ClubDtos.ClubDetailMember;
+import ssu.sokdak.club.dto.ClubDtos.ClubDetailResponse;
+import ssu.sokdak.club.dto.ClubDtos.ClubMembersResponse;
 import ssu.sokdak.club.dto.ClubDtos.CreateClubRequest;
 import ssu.sokdak.club.dto.ClubDtos.JoinClubResponse;
 import ssu.sokdak.club.dto.ClubDtos.RejectClubMemberResponse;
@@ -15,8 +18,11 @@ import ssu.sokdak.club.repository.ClubMemberRepository;
 import ssu.sokdak.club.repository.ClubRepository;
 import ssu.sokdak.user.domain.User;
 import ssu.sokdak.user.repository.UserRepository;
+import ssu.sokdak.user.repository.UserRepository.UserNameView;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 @Service
@@ -168,6 +174,125 @@ public class ClubService {
                 clubId,
                 targetUserId,
                 "REJECTED"
+        );
+    }
+
+    // 동아리 상세 조회 -> Club 엔티티 + 승인된 멤버수 + 리스트
+    @Transactional(readOnly = true)
+    public ClubDetailResponse getClubDetail(Long clubId) {
+        // 1) 동아리 존재 여부 확인
+        Club club = clubRepository.findById(clubId)
+                .orElseThrow(() -> new NoSuchElementException("존재하지 않는 동아리입니다."));
+
+        // 2) 승인된 멤버의 userId 목록 조회
+        List<Long> activeMemberIds = clubMemberRepository.findActiveMemberIdsByClubId(clubId);
+
+        // 3) 승인된 멤버가 없는 경우: 카운트 0, 빈 리스트로 응답
+        if (activeMemberIds.isEmpty()) {
+            return new ClubDetailResponse(
+                    club.getId(),
+                    club.getName(),
+                    club.getDescription(),
+                    0,
+                    List.of(),
+                    club.getCreatedAt(),
+                    club.getUpdatedAt()
+            );
+        }
+
+        // 4) userId 목록으로 이름 projection 조회
+        List<UserNameView> views = userRepository.findByIdIn(activeMemberIds);
+
+        // 5) 이름 오름차순 정렬 후 응답용 멤버 DTO로 매핑
+        List<ClubDetailMember> members = views.stream()
+                .sorted(Comparator.comparing(UserNameView::getName))
+                .map(v -> new ClubDetailMember(v.getId(), v.getName()))
+                .toList();
+
+        return new ClubDetailResponse(
+                club.getId(),
+                club.getName(),
+                club.getDescription(),
+                members.size(),
+                members,
+                club.getCreatedAt(),
+                club.getUpdatedAt()
+        );
+    }
+
+    // 승인된 멤버 목록 조회 (active=true)
+    @Transactional(readOnly = true)
+    public ClubMembersResponse getActiveMembers(Long clubId) {
+        // 1) 동아리 존재 여부 확인
+        Club club = clubRepository.findById(clubId)
+                .orElseThrow(() -> new NoSuchElementException("존재하지 않는 동아리입니다."));
+
+        // 2) 승인된 멤버 userId 목록 조회
+        List<Long> activeMemberIds = clubMemberRepository.findActiveMemberIdsByClubId(clubId);
+
+        if (activeMemberIds.isEmpty()) {
+            return new ClubMembersResponse(
+                    club.getId(),
+                    true,
+                    0,
+                    List.of()
+            );
+        }
+
+        // 3) 이름 projection 조회 후 오름차순 정렬
+        List<UserNameView> views = userRepository.findByIdIn(activeMemberIds);
+        List<ClubDetailMember> members = views.stream()
+                .sorted(Comparator.comparing(UserNameView::getName))
+                .map(v -> new ClubDetailMember(v.getId(), v.getName()))
+                .toList();
+
+        return new ClubMembersResponse(
+                club.getId(),
+                true,
+                members.size(),
+                members
+        );
+    }
+
+    // 가입 대기 멤버 목록 조회 (active=false) -> manager 전용
+    @Transactional(readOnly = true)
+    public ClubMembersResponse getPendingMembers(Long clubId, Long managerUserId) {
+        // 1) 동아리 존재 여부 확인
+        Club club = clubRepository.findById(clubId)
+                .orElseThrow(() -> new NoSuchElementException("존재하지 않는 동아리입니다."));
+
+        // 2) 요청자가 해당 동아리의 manager 인지 확인
+        ClubMember me = clubMemberRepository.findByClubIdAndUserId(clubId, managerUserId)
+                .orElseThrow(() -> new NoSuchElementException("동아리에 속하지 않은 사용자입니다."));
+
+        if (!me.isManager()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "가입 대기 멤버 조회 권한이 없습니다.");
+        }
+
+        // 3) 대기중인 멤버 userId 목록 조회 (active=false)
+        List<Long> pendingMemberIds = clubMemberRepository.findPendingMemberIdsByClubId(clubId);
+
+        if (pendingMemberIds.isEmpty()) {
+            return new ClubMembersResponse(
+                    club.getId(),
+                    false,
+                    0,
+                    List.of()
+            );
+        }
+
+        // 4) 이름 projection 조회 후 오름차순 정렬
+        List<UserNameView> views = userRepository.findByIdIn(pendingMemberIds);
+        List<ClubDetailMember> members = views.stream()
+                .sorted(Comparator.comparing(UserNameView::getName))
+                .map(v -> new ClubDetailMember(v.getId(), v.getName()))
+                .toList();
+
+        return new ClubMembersResponse(
+                club.getId(),
+                false,
+                members.size(),
+                members
         );
     }
 }

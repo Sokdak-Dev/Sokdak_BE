@@ -5,7 +5,6 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import ssu.sokdak.user.domain.User;
 
 @Entity
 @Table(name = "clubs")
@@ -29,6 +28,17 @@ public class Club {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = this.createdAt;
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 
     @OneToMany(mappedBy = "club")
     private List<ClubMember> members = new ArrayList<>();

@@ -1,9 +1,13 @@
 package ssu.sokdak.club.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import ssu.sokdak.club.dto.ClubDtos.ApproveClubMemberResponse;
+import ssu.sokdak.club.dto.ClubDtos.ClubDetailResponse;
+import ssu.sokdak.club.dto.ClubDtos.ClubMembersResponse;
 import ssu.sokdak.club.dto.ClubDtos.CreateClubRequest;
 import ssu.sokdak.club.dto.ClubDtos.CreateClubResponse;
 import ssu.sokdak.club.dto.ClubDtos.DeleteClubResponse;
@@ -40,6 +44,14 @@ public class ClubController {
         return ResponseEntity.ok(new DeleteClubResponse(clubId, "deleted"));
     }
 
+    // 동아리 상세 조회 (기본 정보 + 승인된 멤버 요약)
+    @GetMapping("/{clubId}")
+    public ResponseEntity<ClubDetailResponse> getClubDetail(
+            @PathVariable Long clubId
+    ) {
+        ClubDetailResponse response = clubService.getClubDetail(clubId);
+        return ResponseEntity.ok(response);
+    }
 
     // 동아리 가입 신청
     @PostMapping("/{clubId}/join")
@@ -72,6 +84,31 @@ public class ClubController {
     ) {
         RejectClubMemberResponse res =
                 clubService.rejectJoinRequest(clubId, managerUserId, targetUserId);
+        return ResponseEntity.ok(res);
+    }
+
+    // 멤버 목록 조회 -> 승인된 멤버 목록 (공개), 가입 대기 멤버 목록 (manager 전용)
+    @GetMapping("/{clubId}/members")
+    public ResponseEntity<ClubMembersResponse> getMembers(
+            @PathVariable Long clubId,
+            @RequestParam("active") boolean active,
+            @RequestHeader(value = "X-User-Id", required = false) Long userId
+    ) {
+        if (active) {
+            // 승인된 멤버 목록은 공개 조회 가능 (userId 필요 없음)
+            ClubMembersResponse res = clubService.getActiveMembers(clubId);
+            return ResponseEntity.ok(res);
+        }
+
+        // 가입 대기 목록은 manager만 조회 가능 -> X-User-Id 필수
+        if (userId == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "가입 대기 멤버 목록 조회에는 X-User-Id 헤더가 필요합니다."
+            );
+        }
+
+        ClubMembersResponse res = clubService.getPendingMembers(clubId, userId);
         return ResponseEntity.ok(res);
     }
 }
