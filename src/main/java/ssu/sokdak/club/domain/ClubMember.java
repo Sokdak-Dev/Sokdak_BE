@@ -32,4 +32,18 @@ public class ClubMember {
 
     @Column(name = "joined_at")
     private LocalDateTime joinedAt;
+
+    public boolean isActive() {
+        return Boolean.TRUE.equals(this.active);
+    }
+
+    public boolean isManager() {
+        return "manager".equals(this.role);
+    }
+
+    // 가입 승인 처리: active=true + joinedAt
+    public void approve(LocalDateTime approvedAt) {
+        this.active = true;
+        this.joinedAt = approvedAt;
+    }
 }

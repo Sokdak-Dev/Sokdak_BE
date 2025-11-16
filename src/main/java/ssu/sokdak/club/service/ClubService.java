@@ -7,7 +7,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import ssu.sokdak.club.domain.Club;
 import ssu.sokdak.club.domain.ClubMember;
+import ssu.sokdak.club.dto.ClubDtos.ApproveClubMemberResponse;
 import ssu.sokdak.club.dto.ClubDtos.CreateClubRequest;
+import ssu.sokdak.club.dto.ClubDtos.JoinClubResponse;
+import ssu.sokdak.club.dto.ClubDtos.RejectClubMemberResponse;
 import ssu.sokdak.club.repository.ClubMemberRepository;
 import ssu.sokdak.club.repository.ClubRepository;
 import ssu.sokdak.user.domain.User;
@@ -45,7 +48,7 @@ public class ClubService {
                 .club(club)
                 .user(owner)                      // 동아리 만든 manager
                 .role("manager")                  // 개설자는 관리자 역할
-                .active(true)                     // 승인 시, true로 변환
+                .active(true)                     // 이미 승인된 상태
                 .joinedAt(LocalDateTime.now())
                 .build();
         clubMemberRepository.save(manager);
@@ -60,12 +63,111 @@ public class ClubService {
                 .orElseThrow(() -> new NoSuchElementException("동아리에 속하지 않은 사용자입니다."));
 
         // 2) 권한 확인 후 manager만 삭제 가능, 보안 라이브러리 말고 403 던지도록 처리함
-        if (!"manager".equals(me.getRole())) {
+        if (!me.isManager()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "동아리 삭제 권한이 없습니다.");
         }
 
         // 3) 멤버 → 클럽 순으로 삭제
         clubMemberRepository.deleteAllByClubId(clubId);
         clubRepository.deleteById(clubId);
+    }
+
+    // 동아리 가입 신청
+    // 신규 row 를 active=false, joinedAt=null 로 생성하여 "대기 상태"로 설정
+    public JoinClubResponse requestJoin(Long clubId, Long requesterUserId) {
+
+        Club club = clubRepository.findById(clubId)
+                .orElseThrow(() -> new NoSuchElementException("존재하지 않는 동아리입니다."));
+
+        User user = userRepository.getReferenceById(requesterUserId);
+
+        if (clubMemberRepository.existsByClubIdAndUserId(clubId, requesterUserId)) {
+            throw new IllegalStateException("이미 가입했거나 가입 대기 중인 사용자입니다.");
+        }
+
+        // 가입 대기 상태 row 생성 (active=false, joinedAt=null)
+        ClubMember pending = ClubMember.builder()
+                .club(club)
+                .user(user)
+                .role("member")
+                .active(false)       // 대기 상태
+                .joinedAt(null)      // 아직 승인 전이므로 null, 승인 후 now()
+                .build();
+
+        clubMemberRepository.save(pending);
+
+        return new JoinClubResponse(
+                clubId,
+                requesterUserId,
+                "PENDING"
+        );
+    }
+
+    // 동아리 가입 승인
+    public ApproveClubMemberResponse approveJoinRequest(
+            Long clubId,
+            Long managerUserId,
+            Long targetUserId
+    ) {
+        // 1) 관리자인지 조회
+        ClubMember me = clubMemberRepository.findByClubIdAndUserId(clubId, managerUserId)
+                .orElseThrow(() -> new NoSuchElementException("동아리에 속하지 않은 사용자입니다."));
+
+        // 2) 권한 체크: manager 만 승인 가능
+        if (!me.isManager()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "동아리 가입 승인 권한이 없습니다.");
+        }
+
+        // 3) 승인 대상 멤버 조회
+        ClubMember target = clubMemberRepository.findByClubIdAndUserId(clubId, targetUserId)
+                .orElseThrow(() -> new NoSuchElementException("가입 내역이 존재하지 않습니다."));
+
+        // 4) 이미 승인된 멤버라면, 예외처리
+        if (target.isActive()) {
+            throw new IllegalStateException("이미 승인된 멤버입니다.");
+        }
+
+        // 5) 승인 처리: active=true, joinedAt=now
+        target.approve(LocalDateTime.now());
+
+        return new ApproveClubMemberResponse(
+                clubId,
+                targetUserId,
+                "APPROVED"
+        );
+    }
+
+    // 동아리 가입 거절
+    public RejectClubMemberResponse rejectJoinRequest(
+            Long clubId,
+            Long managerUserId,
+            Long targetUserId
+    ) {
+        // 1) 관리자인지 조회
+        ClubMember me = clubMemberRepository.findByClubIdAndUserId(clubId, managerUserId)
+                .orElseThrow(() -> new NoSuchElementException("동아리에 속하지 않은 사용자입니다."));
+
+        // 2) 권한 체크
+        if (!me.isManager()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "동아리 가입 거절 권한이 없습니다.");
+        }
+
+        // 3) 거절 대상 멤버 조회
+        ClubMember target = clubMemberRepository.findByClubIdAndUserId(clubId, targetUserId)
+                .orElseThrow(() -> new NoSuchElementException("가입 내역이 존재하지 않습니다."));
+
+        // 4) 이미 승인된 멤버라면, 강퇴 api 생성 후 별도 처리
+        if (target.isActive()) {
+            throw new IllegalStateException("이미 승인된 멤버는 거절할 수 없습니다.");
+        }
+
+        // 5) 대기 상태 row 삭제 = 거절
+        clubMemberRepository.delete(target);
+
+        return new RejectClubMemberResponse(
+                clubId,
+                targetUserId,
+                "REJECTED"
+        );
     }
 }
