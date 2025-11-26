@@ -46,6 +46,8 @@ dependencies {
 	implementation("org.springframework.ai:spring-ai-starter-vector-store-qdrant")
 
 	implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+
+	implementation "org.springframework.boot:spring-boot-starter-actuator"
 }
 
 tasks.named('test') {
