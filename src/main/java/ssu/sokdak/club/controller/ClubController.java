@@ -1,22 +1,17 @@
 package ssu.sokdak.club.controller;
 
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import ssu.sokdak.club.dto.ClubDtos.ApproveClubMemberResponse;
-import ssu.sokdak.club.dto.ClubDtos.ClubDetailResponse;
-import ssu.sokdak.club.dto.ClubDtos.ClubMembersResponse;
-import ssu.sokdak.club.dto.ClubDtos.CreateClubRequest;
-import ssu.sokdak.club.dto.ClubDtos.CreateClubResponse;
-import ssu.sokdak.club.dto.ClubDtos.DeleteClubResponse;
-import ssu.sokdak.club.dto.ClubDtos.JoinClubResponse;
-import ssu.sokdak.club.dto.ClubDtos.RejectClubMemberResponse;
+import ssu.sokdak.club.dto.ClubDtos.*;
 import ssu.sokdak.club.service.ClubService;
+import ssu.sokdak.user.api.MemberController;
 
-// 헤더에서 userId를 받고, 로그인 구현 후에 교체 필요
-// 임시로 헤더: X-User-Id: <사용자ID>
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/clubs")
 @RequiredArgsConstructor
@@ -24,12 +19,22 @@ public class ClubController {
 
     private final ClubService clubService;
 
+    // 세션에서 로그인된 사용자 ID 추출
+    private Long getLoginUserId(HttpSession session) {
+        Long userId = (Long) session.getAttribute(MemberController.SESSION_KEY);
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        return userId;
+    }
+
     // 동아리 생성
     @PostMapping
     public ResponseEntity<CreateClubResponse> create(
             @RequestBody CreateClubRequest req,
-            @RequestHeader("X-User-Id") Long userId
+            HttpSession session
     ) {
+        Long userId = getLoginUserId(session);
         Long id = clubService.createClub(req, userId);
         return ResponseEntity.ok(new CreateClubResponse(id));
     }
@@ -38,13 +43,21 @@ public class ClubController {
     @DeleteMapping("/{clubId}")
     public ResponseEntity<DeleteClubResponse> delete(
             @PathVariable Long clubId,
-            @RequestHeader("X-User-Id") Long userId
+            HttpSession session
     ) {
+        Long userId = getLoginUserId(session);
         clubService.deleteClub(clubId, userId);
         return ResponseEntity.ok(new DeleteClubResponse(clubId, "deleted"));
     }
 
-    // 동아리 상세 조회 (기본 정보 + 승인된 멤버 요약)
+    // 동아리 검색 (로그인 불필요)
+    @GetMapping("/search")
+    public ResponseEntity<List<ClubSearchResponse>> search(@RequestParam("q") String query) {
+        List<ClubSearchResponse> result = clubService.searchClubs(query);
+        return ResponseEntity.ok(result);
+    }
+
+    // 동아리 상세 조회
     @GetMapping("/{clubId}")
     public ResponseEntity<ClubDetailResponse> getClubDetail(
             @PathVariable Long clubId
@@ -57,8 +70,9 @@ public class ClubController {
     @PostMapping("/{clubId}/join")
     public ResponseEntity<JoinClubResponse> join(
             @PathVariable Long clubId,
-            @RequestHeader("X-User-Id") Long userId
+            HttpSession session
     ) {
+        Long userId = getLoginUserId(session);
         JoinClubResponse res = clubService.requestJoin(clubId, userId);
         return ResponseEntity.ok(res);
     }
@@ -68,10 +82,10 @@ public class ClubController {
     public ResponseEntity<ApproveClubMemberResponse> approve(
             @PathVariable Long clubId,
             @PathVariable("userId") Long targetUserId,
-            @RequestHeader("X-User-Id") Long managerUserId
+            HttpSession session
     ) {
-        ApproveClubMemberResponse res =
-                clubService.approveJoinRequest(clubId, managerUserId, targetUserId);
+        Long managerUserId = getLoginUserId(session);
+        ApproveClubMemberResponse res = clubService.approveJoinRequest(clubId, managerUserId, targetUserId);
         return ResponseEntity.ok(res);
     }
 
@@ -80,35 +94,27 @@ public class ClubController {
     public ResponseEntity<RejectClubMemberResponse> reject(
             @PathVariable Long clubId,
             @PathVariable("userId") Long targetUserId,
-            @RequestHeader("X-User-Id") Long managerUserId
+            HttpSession session
     ) {
-        RejectClubMemberResponse res =
-                clubService.rejectJoinRequest(clubId, managerUserId, targetUserId);
+        Long managerUserId = getLoginUserId(session);
+        RejectClubMemberResponse res = clubService.rejectJoinRequest(clubId, managerUserId, targetUserId);
         return ResponseEntity.ok(res);
     }
 
-    // 멤버 목록 조회 -> 승인된 멤버 목록 (공개), 가입 대기 멤버 목록 (manager 전용)
+    // 멤버 목록 조회
     @GetMapping("/{clubId}/members")
     public ResponseEntity<ClubMembersResponse> getMembers(
             @PathVariable Long clubId,
             @RequestParam("active") boolean active,
-            @RequestHeader(value = "X-User-Id", required = false) Long userId
+            HttpSession session
     ) {
         if (active) {
-            // 승인된 멤버 목록은 공개 조회 가능 (userId 필요 없음)
-            ClubMembersResponse res = clubService.getActiveMembers(clubId);
-            return ResponseEntity.ok(res);
+            // 승인된 멤버 목록 조회 (공개)
+            return ResponseEntity.ok(clubService.getActiveMembers(clubId));
         }
 
-        // 가입 대기 목록은 manager만 조회 가능 -> X-User-Id 필수
-        if (userId == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "가입 대기 멤버 목록 조회에는 X-User-Id 헤더가 필요합니다."
-            );
-        }
-
-        ClubMembersResponse res = clubService.getPendingMembers(clubId, userId);
-        return ResponseEntity.ok(res);
+        // 가입 대기 목록은 매니저만 조회 가능 -> 로그인 필수
+        Long userId = getLoginUserId(session);
+        return ResponseEntity.ok(clubService.getPendingMembers(clubId, userId));
     }
 }

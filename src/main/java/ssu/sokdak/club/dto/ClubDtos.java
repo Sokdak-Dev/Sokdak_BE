@@ -2,46 +2,41 @@ package ssu.sokdak.club.dto;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import ssu.sokdak.club.domain.Club;
 
 public class ClubDtos {
 
-    // 동아리 생성 요청: 우선 이름이랑 설명만 구현
     public record CreateClubRequest(String name, String description) { }
 
-    // 생성된 clubId 반환
     public record CreateClubResponse(Long clubId) { }
 
-    // 삭제된 clubId와 결과 문자열 ex) "~ 동아리가 삭제되었습니다."
     public record DeleteClubResponse(Long clubId, String result) { }
 
-    // 동아리 가입 신청 결과 응답
     public record JoinClubResponse(
             Long clubId,
             Long userId,
             String requestStatus
     ) { }
 
-    // 동아리 가입 승인 결과 응답
     public record ApproveClubMemberResponse(
             Long clubId,
             Long userId,
             String requestStatus
     ) { }
 
-    // 동아리 가입 거절 결과 응답
     public record RejectClubMemberResponse(
             Long clubId,
             Long userId,
             String requestStatus
     ) { }
 
-    // 동아리 상세 조회 응답에서 사용하는 멤버 요약 정보 -> 명단 사용할 때 용도
+    // 멤버 리스트에 사진(avatarUrl)이 있어야 함
     public record ClubDetailMember(
             Long userId,
-            String name
+            String name,
+            String avatarUrl // 추가됨
     ) { }
 
-    // 동아리 상세 조회 응답 -> 동아리 전체 요약 + 승인된 멤버수 + 리스트 포함
     public record ClubDetailResponse(
             Long clubId,
             String name,
@@ -52,11 +47,27 @@ public class ClubDtos {
             LocalDateTime updatedAt
     ) { }
 
-    // 멤버 목록 전용 응답 (승인/대기 공통)
     public record ClubMembersResponse(
             Long clubId,
             boolean active,
             int count,
             List<ClubDetailMember> members
     ) { }
+
+    // [추가] 검색 결과 DTO
+    public record ClubSearchResponse(
+            Long clubId,
+            String name,
+            String description,
+            LocalDateTime createdAt
+    ) {
+        public static ClubSearchResponse from(Club club) {
+            return new ClubSearchResponse(
+                    club.getId(),
+                    club.getName(),
+                    club.getDescription(),
+                    club.getCreatedAt()
+            );
+        }
+    }
 }
