@@ -67,5 +67,11 @@ public class MemberController {
         if (memberId == null) throw new IllegalStateException("로그인이 필요합니다.");
         return ResponseEntity.ok(MemberDtos.MemberRes.from(memberService.get(memberId)));
     }
+
+    // 회원 카테고리 선택 조회
+    @GetMapping("/{id}/category-selections")
+    public ResponseEntity<java.util.List<MemberDtos.CategorySelectionRes>> categorySelections(@PathVariable Long id) {
+        return ResponseEntity.ok(memberService.getCategorySelections(id));
+    }
 }
 
