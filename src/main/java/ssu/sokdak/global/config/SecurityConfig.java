@@ -38,7 +38,6 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // 🔥 프론트 origin (지금은 Vite: http://localhost:5173)
         config.setAllowedOrigins(List.of(
                 "http://localhost:5173"
         ));
