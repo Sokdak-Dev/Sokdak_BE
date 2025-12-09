@@ -39,6 +39,9 @@ public class Compliment {
     @Column(columnDefinition = "text")
     private String message;
 
+    @Column
+    private Boolean anonymity;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -49,5 +52,9 @@ public class Compliment {
 
     public void updateReceiver(User receiver){
         this.receiver = receiver;
+    }
+
+    public void updateAnonymity(Boolean anonymity){
+        this.anonymity = anonymity;
     }
 }

@@ -172,5 +172,6 @@ public class ComplimentService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
 
         compliment.updateReceiver(user);
+        compliment.updateAnonymity(request.getAnonymity());
     }
 }
