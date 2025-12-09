@@ -3,6 +3,8 @@ package ssu.sokdak.category.domain;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "categories")
 @Getter
@@ -16,5 +18,19 @@ public class Category {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String code; // e.g. 리더십
+    private String code;
+
+    @Column(nullable = false)
+    private String nameKo;
+
+    @Column(nullable = true)
+    private String nameEn;
+
+    @Column(nullable = false)
+    private LocalDateTime createdAt;
+
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
 }
+
+

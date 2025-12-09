@@ -31,6 +31,7 @@ public class UserCategorySelection {
     @JoinColumn(name = "option_id", nullable = false)
     private CategoryOption option;
 
+    @Column(name = "rank_value")
     private Integer rank;
 
     @Column(name = "selected_at")
