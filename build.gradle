@@ -33,19 +33,22 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
-	implementation 'org.mindrot:jbcrypt:0.4' /* BCrypt
+	implementation 'org.mindrot:jbcrypt:0.4' /* BCrypt */
 
 
-	   Spring AI */
-
-
-    implementation(platform("org.springframework.ai:spring-ai-bom:1.0.3"))
+	/* Spring AI */
+	implementation(platform("org.springframework.ai:spring-ai-bom:1.0.3"))
 	// Spring AI: Ollama
 	implementation("org.springframework.ai:spring-ai-starter-model-ollama")
 	// Spring AI: Qdrant
 	implementation("org.springframework.ai:spring-ai-starter-vector-store-qdrant")
 
 	implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+
+	implementation "org.springframework.boot:spring-boot-starter-actuator"
+
+	// Swagger
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
 }
 
 tasks.named('test') {
