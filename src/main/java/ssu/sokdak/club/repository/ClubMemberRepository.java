@@ -17,6 +17,9 @@ public interface ClubMemberRepository extends JpaRepository<ClubMember, Long> {
     // 권한 확인에 사용
     Optional<ClubMember> findByClubIdAndUserId(Long clubId, Long userId);
 
+    // [★필수 추가★] MemberService에서 로그인 시 내 동아리 목록을 가져오기 위해 이게 꼭 있어야 합니다!
+    List<ClubMember> findByUserIdAndActiveTrue(Long userId);
+
     // 클럽 삭제 시 멤버 먼저 지운 다음 클럽 삭제
     @Modifying
     @Query("delete from ClubMember m where m.club.id = :clubId")
