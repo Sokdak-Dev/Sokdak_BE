@@ -8,4 +8,5 @@ import lombok.Setter;
 public class ComplimentSelectRequest {
     private Long complimentId;
     private Long userId;
+    private Boolean anonymity;
 }

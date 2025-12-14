@@ -25,7 +25,7 @@ public class Badge {
     private String description;
     private String iconUrl;
 
-    @Column(columnDefinition = "json")
+    @Column(name = "badge_condition", columnDefinition = "json")
     private String condition = "{}";
 
     @Column(name = "created_at")

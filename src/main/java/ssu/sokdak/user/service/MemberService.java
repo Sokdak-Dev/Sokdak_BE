@@ -4,9 +4,20 @@ import lombok.RequiredArgsConstructor;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ssu.sokdak.category.domain.Category;
+import ssu.sokdak.category.domain.CategoryOption;
+import ssu.sokdak.category.repository.CategoryOptionRepository;
+import ssu.sokdak.category.repository.CategoryRepository;
 import ssu.sokdak.user.domain.User;
+import ssu.sokdak.user.domain.UserCategorySelection;
 import ssu.sokdak.user.dto.MemberDtos;
+import ssu.sokdak.user.repository.UserCategorySelectionRepository;
 import ssu.sokdak.user.repository.UserRepository;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -14,6 +25,9 @@ import ssu.sokdak.user.repository.UserRepository;
 public class MemberService {
 
     private final UserRepository userRepository;
+    private final CategoryRepository categoryRepository;
+    private final CategoryOptionRepository categoryOptionRepository;
+    private final UserCategorySelectionRepository userCategorySelectionRepository;
 
     @Transactional
     public User register(MemberDtos.RegisterReq req){
@@ -28,7 +42,55 @@ public class MemberService {
                 .avatarUrl(req.avatarUrl())
                 .status("active")
                 .build();
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+
+        persistCategorySelections(saved, req.selections());
+        return saved;
+    }
+
+    private void persistCategorySelections(User user, List<MemberDtos.CategorySelectionReq> selections) {
+        List<Category> categories = categoryRepository.findAll();
+        if (categories.isEmpty()) {
+            throw new IllegalStateException("카테고리가 설정되지 않았습니다.");
+        }
+        if (selections == null || selections.size() != categories.size()) {
+            throw new IllegalArgumentException("모든 카테고리에 대한 선택을 제출해야 합니다.");
+        }
+
+        var categoryByCode = categories.stream()
+                .collect(Collectors.toMap(Category::getCode, c -> c));
+
+        List<UserCategorySelection> entities = new ArrayList<>();
+        var seenCodes = new java.util.HashSet<String>();
+        for (MemberDtos.CategorySelectionReq selection : selections) {
+            if (!seenCodes.add(selection.categoryCode())) {
+                throw new IllegalArgumentException("카테고리 중복 선택이 감지되었습니다: " + selection.categoryCode());
+            }
+            Category category = categoryByCode.get(selection.categoryCode());
+            if (category == null) {
+                throw new IllegalArgumentException("존재하지 않는 카테고리입니다: " + selection.categoryCode());
+            }
+            CategoryOption option = categoryOptionRepository.findByCategoryAndLabel(category, selection.optionLabel())
+                    .orElseThrow(() -> new IllegalArgumentException("카테고리에 해당 옵션이 없습니다: " + selection.optionLabel()));
+
+            UserCategorySelection entity = UserCategorySelection.builder()
+                    .user(user)
+                    .category(category)
+                    .option(option)
+                    .rank(selection.rank())
+                    .selectedAt(LocalDateTime.now())
+                    .build();
+            entities.add(entity);
+        }
+
+        userCategorySelectionRepository.saveAll(entities);
+    }
+
+    public List<MemberDtos.CategorySelectionRes> getCategorySelections(Long userId) {
+        get(userId); // 존재 여부 확인
+        return userCategorySelectionRepository.findByUserIdWithCategoryAndOption(userId).stream()
+                .map(MemberDtos.CategorySelectionRes::from)
+                .toList();
     }
 
     public User login(MemberDtos.LoginReq req){
