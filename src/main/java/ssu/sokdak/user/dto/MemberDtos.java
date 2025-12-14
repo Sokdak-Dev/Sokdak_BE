@@ -7,6 +7,7 @@ import ssu.sokdak.user.domain.User;
 import ssu.sokdak.club.dto.ClubDtos.ClubSimpleRes; // [HEAD: 내 코드]
 import ssu.sokdak.user.domain.UserCategorySelection; // [develop: 팀원 코드]
 import java.time.LocalDateTime; // [develop: 팀원 코드]
+import ssu.sokdak.club.dto.ClubDtos.ClubSimpleRes;
 
 public class MemberDtos {
 
@@ -44,7 +45,7 @@ public class MemberDtos {
             String nickname,
             String avatarUrl,
             String status,
-            List<ClubSimpleRes> clubs // 가입한 동아리 목록
+            List<ClubSimpleRes> clubs   // ✅ 동아리 목록 필드 추가
     ) {
         public static MemberRes from(User u, List<ClubSimpleRes> clubs){
             return new MemberRes(

@@ -13,6 +13,8 @@ import ssu.sokdak.user.domain.UserCategorySelection;
 import ssu.sokdak.user.dto.MemberDtos;
 import ssu.sokdak.user.repository.UserCategorySelectionRepository;
 import ssu.sokdak.user.repository.UserRepository;
+import ssu.sokdak.club.dto.ClubDtos.ClubSimpleRes;
+import ssu.sokdak.club.repository.ClubMemberRepository;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -28,9 +30,11 @@ public class MemberService {
     private final CategoryRepository categoryRepository;
     private final CategoryOptionRepository categoryOptionRepository;
     private final UserCategorySelectionRepository userCategorySelectionRepository;
+    private final ClubMemberRepository clubMemberRepository;
+
 
     @Transactional
-    public User register(MemberDtos.RegisterReq req){
+    public MemberDtos.MemberRes register(MemberDtos.RegisterReq req){
         if (userRepository.existsByEmail(req.email()))
             throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
         String hash = BCrypt.hashpw(req.password(), BCrypt.gensalt(12));
@@ -45,8 +49,11 @@ public class MemberService {
         User saved = userRepository.save(user);
 
         persistCategorySelections(saved, req.selections());
-        return saved;
+
+        // 가입 직후에는 동아리 없음 → List.of()
+        return MemberDtos.MemberRes.from(saved, List.of());
     }
+
 
     private void persistCategorySelections(User user, List<MemberDtos.CategorySelectionReq> selections) {
         List<Category> categories = categoryRepository.findAll();
@@ -87,47 +94,57 @@ public class MemberService {
     }
 
     public List<MemberDtos.CategorySelectionRes> getCategorySelections(Long userId) {
-        get(userId); // 존재 여부 확인
+        if (!userRepository.existsById(userId)) {
+            throw new IllegalArgumentException("회원이 존재하지 않습니다.");
+        }
         return userCategorySelectionRepository.findByUserIdWithCategoryAndOption(userId).stream()
                 .map(MemberDtos.CategorySelectionRes::from)
                 .toList();
     }
 
-    public User login(MemberDtos.LoginReq req){
+
+    public MemberDtos.MemberRes login(MemberDtos.LoginReq req){
         User u = userRepository.findByEmail(req.email())
                 .orElseThrow(() -> new IllegalArgumentException("가입되지 않은 이메일입니다."));
         if (!BCrypt.checkpw(req.password(), u.getPasswordHash()))
             throw new IllegalArgumentException("비밀번호가 올바르지 않습니다.");
         if (!"active".equals(u.getStatus()))
             throw new IllegalStateException("비활성화된 계정입니다.");
-        return u;
+
+        // 로그인 시 내가 가입한 동아리 목록 포함
+        return MemberDtos.MemberRes.from(u, getMyClubs(u.getId()));
     }
 
-    public User get(Long id){
-        return userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
+    public MemberDtos.MemberRes get(Long id){
+        User u = getUserEntity(id);
+        return MemberDtos.MemberRes.from(u, getMyClubs(id));
     }
+
+
 
     @Transactional
-    public User update(Long id, MemberDtos.UpdateReq req){
-        User u = get(id);
+    public MemberDtos.MemberRes update(Long id, MemberDtos.UpdateReq req){
+        User u = getUserEntity(id);
         User updated = User.builder()
                 .id(u.getId())
                 .email(u.getEmail())
                 .passwordHash(u.getPasswordHash())
-                .name(req.name()!=null ? req.name() : u.getName())
-                .nickname(req.nickname()!=null ? req.nickname() : u.getNickname())
-                .avatarUrl(req.avatarUrl()!=null ? req.avatarUrl() : u.getAvatarUrl())
+                .name(req.name() != null ? req.name() : u.getName())
+                .nickname(req.nickname() != null ? req.nickname() : u.getNickname())
+                .avatarUrl(req.avatarUrl() != null ? req.avatarUrl() : u.getAvatarUrl())
                 .status(u.getStatus())
                 .createdAt(u.getCreatedAt())
                 .updatedAt(u.getUpdatedAt())
                 .build();
-        return userRepository.save(updated);
+        User saved = userRepository.save(updated);
+
+        return MemberDtos.MemberRes.from(saved, getMyClubs(id));
     }
+
 
     @Transactional
     public void deactivate(Long id){
-        User u = get(id);
+        User u = getUserEntity(id);
         User deactivated = User.builder()
                 .id(u.getId())
                 .email(u.getEmail())
@@ -140,5 +157,18 @@ public class MemberService {
                 .updatedAt(u.getUpdatedAt())
                 .build();
         userRepository.save(deactivated);
+    }
+
+    //내가 가입한 동아리 목록 조회
+    private List<ClubSimpleRes> getMyClubs(Long userId) {
+        return clubMemberRepository.findByUserIdAndActiveTrue(userId).stream()
+                .map(cm -> ClubSimpleRes.from(cm.getClub()))
+                .toList();
+    }
+
+    // 내부에서 User 엔티티가 필요할 때 사용하는 헬퍼
+    private User getUserEntity(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
     }
 }
