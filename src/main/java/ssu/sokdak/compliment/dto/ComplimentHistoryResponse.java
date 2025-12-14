@@ -11,6 +11,7 @@ public class ComplimentHistoryResponse {
     private Long complimentId;
     private Long userId;
     private String name;
+    private String gender;
     private String message;
     private Boolean anonymity;
     private LocalDateTime createdAt;
