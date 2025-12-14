@@ -30,18 +30,18 @@ public interface ComplimentRepository extends JpaRepository<Compliment, Long> {
         select c
         from Compliment c
         join fetch c.receiver r
-        where c.sender.id = :memberId
+        where c.sender.id = :userId
         order by c.createdAt desc
     """)
-    List<Compliment> findSentByMemberId(@Param("memberId") Long memberId);
+    List<Compliment> findSentByUserId(@Param("userId") Long userId);
 
     @Query("""
         select c
         from Compliment c
         join fetch c.sender s
-        where c.receiver.id = :memberId
+        where c.receiver.id = :userId
         order by c.createdAt desc
     """)
-    List<Compliment> findReceivedByMemberId(@Param("memberId") Long memberId);
+    List<Compliment> findReceivedByUserId(@Param("userId") Long userId);
 
 }

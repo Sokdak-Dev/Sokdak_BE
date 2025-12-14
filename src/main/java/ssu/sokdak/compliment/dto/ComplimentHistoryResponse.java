@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 @Builder
 public class ComplimentHistoryResponse {
     private Long complimentId;
-    private Long memberId;
+    private Long userId;
     private String name;
     private String message;
     private Boolean anonymity;
