@@ -70,9 +70,15 @@ public class ClubService {
     @Transactional(readOnly = true)
     public List<ClubSearchResponse> searchClubs(String query) {
         if (query == null || query.isBlank()) return List.of();
-        return clubRepository.findByNameContainingOrDescriptionContaining(query, query)
-                .stream()
-                .map(ClubSearchResponse::from)
+
+        List<Club> clubs = clubRepository.findByNameContainingOrDescriptionContaining(query, query);
+
+        // [수정] 멤버 수(count) 계산 후 DTO 변환
+        return clubs.stream()
+                .map(club -> {
+                    int count = clubMemberRepository.findActiveMemberIdsByClubId(club.getId()).size();
+                    return ClubSearchResponse.from(club, count);
+                })
                 .toList();
     }
 
@@ -190,7 +196,8 @@ public class ClubService {
         List<Long> activeMemberIds = clubMemberRepository.findActiveMemberIdsByClubId(clubId);
 
         if (activeMemberIds.isEmpty()) {
-            return new ClubMembersResponse(club.getId(), true, 0, List.of());
+            // [수정] rankings에 빈 리스트 추가
+            return new ClubMembersResponse(club.getId(), true, 0, List.of(), List.of());
         }
 
         List<UserNameView> views = userRepository.findByIdIn(activeMemberIds);
@@ -199,7 +206,8 @@ public class ClubService {
                 .map(v -> new ClubDetailMember(v.getId(), v.getName(), v.getAvatarUrl())) // avatarUrl 추가
                 .toList();
 
-        return new ClubMembersResponse(club.getId(), true, members.size(), members);
+        // [수정] rankings에 빈 리스트 추가
+        return new ClubMembersResponse(club.getId(), true, members.size(), members, List.of());
     }
 
     // 가입 대기 멤버 목록 조회 (Figma 반영: AvatarUrl 포함)
@@ -218,7 +226,8 @@ public class ClubService {
         List<Long> pendingMemberIds = clubMemberRepository.findPendingMemberIdsByClubId(clubId);
 
         if (pendingMemberIds.isEmpty()) {
-            return new ClubMembersResponse(club.getId(), false, 0, List.of());
+            // [수정] rankings에 빈 리스트 추가
+            return new ClubMembersResponse(club.getId(), false, 0, List.of(), List.of());
         }
 
         List<UserNameView> views = userRepository.findByIdIn(pendingMemberIds);
@@ -227,6 +236,7 @@ public class ClubService {
                 .map(v -> new ClubDetailMember(v.getId(), v.getName(), v.getAvatarUrl())) // avatarUrl 추가
                 .toList();
 
-        return new ClubMembersResponse(club.getId(), false, members.size(), members);
+        // [수정] rankings에 빈 리스트 추가
+        return new ClubMembersResponse(club.getId(), false, members.size(), members, List.of());
     }
 }
