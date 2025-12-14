@@ -25,7 +25,7 @@ public class ComplimentController {
     private final ComplimentService complimentService;
 
     @PostMapping("/compliments/embedding")
-    public ResponseEntity<Void> saveComplimentTemplate(ComplimentTemplateRequest request) {
+    public ResponseEntity<Void> saveComplimentTemplate(@RequestBody ComplimentTemplateRequest request) {
         complimentService.saveComplimentTemplate(request.getText(), request.getCategory());
         return ResponseEntity.noContent().build();
     }
