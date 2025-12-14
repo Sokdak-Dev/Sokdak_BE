@@ -10,10 +10,12 @@ import ssu.sokdak.compliment.dto.ComplimentGenerateResponse;
 import ssu.sokdak.compliment.dto.ComplimentHistoryResponse;
 import ssu.sokdak.compliment.dto.ComplimentSelectRequest;
 import ssu.sokdak.compliment.dto.ComplimentTemplateRequest;
+import ssu.sokdak.compliment.service.ComplimentIndexService;
 import ssu.sokdak.compliment.service.ComplimentService;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static ssu.sokdak.user.api.MemberController.SESSION_KEY;
 
@@ -23,6 +25,7 @@ import static ssu.sokdak.user.api.MemberController.SESSION_KEY;
 public class ComplimentController {
 
     private final ComplimentService complimentService;
+    private final ComplimentIndexService complimentIndexService;
 
     @PostMapping("/compliments/embedding")
     public ResponseEntity<Void> saveComplimentTemplate(@RequestBody ComplimentTemplateRequest request) {
@@ -30,7 +33,7 @@ public class ComplimentController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/compliments/clubs/{club_id}/users/{user_id}")
+    @PostMapping("/compliments/clubs/{club_id}")
     public ResponseEntity<List<ComplimentGenerateResponse>> createCompliments(@PathVariable("club_id") Long clubId,
                                                                               HttpSession session) {
         Long userId = (Long) session.getAttribute(SESSION_KEY);
@@ -57,5 +60,16 @@ public class ComplimentController {
         Long userId = (Long) session.getAttribute(SESSION_KEY);
         if (userId == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
         return ResponseEntity.ok(complimentService.getReceivedCompliments(userId));
+    }
+
+    @PostMapping("/reindex/compliments")
+    public Map<String, Object> reindexCompliments(
+            @RequestParam(defaultValue = "200") int batchSize
+    ) {
+        int indexed = complimentIndexService.reindexAll(batchSize);
+        return Map.of(
+                "indexed", indexed,
+                "batchSize", batchSize
+        );
     }
 }
