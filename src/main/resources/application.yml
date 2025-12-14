@@ -43,6 +43,11 @@ server:
   error:
     include-message: always
   forward-headers-strategy: native
+  servlet:
+    session:
+      cookie:
+        secure: true
+        same-site: none
 
 management:
   endpoints:
