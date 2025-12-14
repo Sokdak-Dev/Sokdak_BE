@@ -30,6 +30,9 @@ public class User {
     @Column(name = "avatar_url")
     private String avatarUrl;
 
+    @Column(name = "gender")
+    private String gender;
+
     @Column(nullable = false)
     private String status = "active"; // active, deactivated, banned
 
