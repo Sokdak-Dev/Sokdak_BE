@@ -15,6 +15,7 @@ import ssu.sokdak.club.repository.ClubMemberRepository;
 import ssu.sokdak.compliment.domain.Compliment;
 import ssu.sokdak.compliment.domain.ComplimentTemplate;
 import ssu.sokdak.compliment.dto.ComplimentGenerateResponse;
+import ssu.sokdak.compliment.dto.ComplimentHistoryResponse;
 import ssu.sokdak.compliment.dto.ComplimentSelectRequest;
 import ssu.sokdak.compliment.repository.ComplimentRepository;
 import ssu.sokdak.compliment.repository.ComplimentTemplateRepository;
@@ -138,6 +139,7 @@ public class ComplimentService {
                     .category(cat)
                     .template(template)
                     .score(null)
+                    .createdAt(LocalDateTime.now())
                     .build();
             Compliment saved = complimentRepository.save(draft);
 
@@ -174,5 +176,50 @@ public class ComplimentService {
         compliment.updateReceiver(user);
 
         compliment.updateAnonymity(request.getAnonymity());
+    }
+
+    public List<ComplimentHistoryResponse> getSentCompliments(Long memberId) {
+        return complimentRepository.findSentByMemberId(memberId).stream()
+                .map(c -> {
+                    User receiver = c.getReceiver();
+                    return ComplimentHistoryResponse.builder()
+                            .complimentId(c.getId())
+                            .memberId(receiver.getId())
+                            .name(receiver.getName())
+                            .message(c.getMessage())
+                            .anonymity(c.getAnonymity())
+                            .createdAt(c.getCreatedAt())
+                            .build();
+                })
+                .toList();
+    }
+
+    public List<ComplimentHistoryResponse> getReceivedCompliments(Long memberId) {
+        return complimentRepository.findReceivedByMemberId(memberId).stream()
+                .map(c -> {
+                    boolean isAnonymous = Boolean.TRUE.equals(c.getAnonymity());
+
+                    if (isAnonymous) {
+                        return ComplimentHistoryResponse.builder()
+                                .complimentId(c.getId())
+                                .memberId(null)
+                                .name("익명")
+                                .message(c.getMessage())
+                                .anonymity(true)
+                                .createdAt(c.getCreatedAt())
+                                .build();
+                    }
+
+                    User sender = c.getSender();
+                    return ComplimentHistoryResponse.builder()
+                            .complimentId(c.getId())
+                            .memberId(sender.getId())
+                            .name(sender.getName())
+                            .message(c.getMessage())
+                            .anonymity(false)
+                            .createdAt(c.getCreatedAt())
+                            .build();
+                })
+                .toList();
     }
 }

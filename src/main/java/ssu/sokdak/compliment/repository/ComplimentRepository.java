@@ -3,6 +3,7 @@ package ssu.sokdak.compliment.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import ssu.sokdak.compliment.domain.Compliment;
 
 import java.time.LocalDateTime;
@@ -24,5 +25,23 @@ public interface ComplimentRepository extends JpaRepository<Compliment, Long> {
         GROUP BY DATE(c.created_at)
         """, nativeQuery = true)
     List<java.sql.Date> distinctSentDates(Long userId, LocalDateTime from, LocalDateTime to);
+
+    @Query("""
+        select c
+        from Compliment c
+        join fetch c.receiver r
+        where c.sender.id = :memberId
+        order by c.createdAt desc
+    """)
+    List<Compliment> findSentByMemberId(@Param("memberId") Long memberId);
+
+    @Query("""
+        select c
+        from Compliment c
+        join fetch c.sender s
+        where c.receiver.id = :memberId
+        order by c.createdAt desc
+    """)
+    List<Compliment> findReceivedByMemberId(@Param("memberId") Long memberId);
 
 }
