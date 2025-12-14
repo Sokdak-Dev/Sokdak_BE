@@ -20,18 +20,20 @@ public class MemberController {
     // 회원가입
     @PostMapping("/register")
     public ResponseEntity<MemberDtos.MemberRes> register(@Valid @RequestBody MemberDtos.RegisterReq req) {
-        User u = memberService.register(req);
-        return ResponseEntity.ok(MemberDtos.MemberRes.from(u));
+        MemberDtos.MemberRes res = memberService.register(req);
+        return ResponseEntity.ok(res);
     }
+
 
     // 로그인 (세션)
     @PostMapping("/login")
     public ResponseEntity<MemberDtos.MemberRes> login(@Valid @RequestBody MemberDtos.LoginReq req,
                                                       HttpSession session) {
-        User u = memberService.login(req);
-        session.setAttribute(SESSION_KEY, u.getId());
-        return ResponseEntity.ok(MemberDtos.MemberRes.from(u));
+        MemberDtos.MemberRes res = memberService.login(req);
+        session.setAttribute(SESSION_KEY, res.id());  //  DTO에서 id 꺼내서 세션에 저장
+        return ResponseEntity.ok(res);
     }
+
 
     // 로그아웃
     @PostMapping("/logout")
@@ -43,15 +45,19 @@ public class MemberController {
     // 회원 정보 조회 (id로)
     @GetMapping
     public ResponseEntity<MemberDtos.MemberRes> get(@RequestParam Long id) {
-        return ResponseEntity.ok(MemberDtos.MemberRes.from(memberService.get(id)));
+        MemberDtos.MemberRes res = memberService.get(id);
+        return ResponseEntity.ok(res);
     }
+
 
     // 회원 정보 수정
     @PatchMapping
     public ResponseEntity<MemberDtos.MemberRes> update(@RequestParam Long id,
                                                        @RequestBody MemberDtos.UpdateReq req) {
-        return ResponseEntity.ok(MemberDtos.MemberRes.from(memberService.update(id, req)));
+        MemberDtos.MemberRes res = memberService.update(id, req);
+        return ResponseEntity.ok(res);
     }
+
 
     // 회원 탈퇴(비활성화)
     @DeleteMapping
@@ -65,8 +71,10 @@ public class MemberController {
     public ResponseEntity<MemberDtos.MemberRes> me(HttpSession session) {
         Long memberId = (Long) session.getAttribute(SESSION_KEY);
         if (memberId == null) throw new IllegalStateException("로그인이 필요합니다.");
-        return ResponseEntity.ok(MemberDtos.MemberRes.from(memberService.get(memberId)));
+        MemberDtos.MemberRes res = memberService.get(memberId);
+        return ResponseEntity.ok(res);
     }
+
 
     // 회원 카테고리 선택 조회
     @GetMapping("/{id}/category-selections")
