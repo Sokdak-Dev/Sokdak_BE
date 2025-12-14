@@ -7,5 +7,5 @@ import lombok.Setter;
 @Setter
 public class ComplimentTemplateRequest {
     private String text;
-    private String Category;
+    private String category;
 }
