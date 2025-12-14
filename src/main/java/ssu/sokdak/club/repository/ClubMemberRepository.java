@@ -11,20 +11,27 @@ import java.util.Optional;
 
 public interface ClubMemberRepository extends JpaRepository<ClubMember, Long> {
 
-    // ClubMember의 유니크제약 기반 중복 신청 방지 및 권한 확인에 사용
+    // 권한 및 중복 체크
     boolean existsByClubIdAndUserId(Long clubId, Long userId);
-
-    // 권한 확인에 사용
     Optional<ClubMember> findByClubIdAndUserId(Long clubId, Long userId);
 
-    // [★필수 추가★] MemberService에서 로그인 시 내 동아리 목록을 가져오기 위해 이게 꼭 있어야 합니다!
+    // [MemberService 연동용] 로그인 시 내 동아리 목록 조회
     List<ClubMember> findByUserIdAndActiveTrue(Long userId);
 
-    // 클럽 삭제 시 멤버 먼저 지운 다음 클럽 삭제
+    // 삭제 로직
     @Modifying
     @Query("delete from ClubMember m where m.club.id = :clubId")
     void deleteAllByClubId(@Param("clubId") Long clubId);
 
+    // [★추가] 멤버 목록 조회 시 User 정보와 Role을 한 번에 가져오는 쿼리 (성능 최적화 + Role 조회)
+    @Query("select cm from ClubMember cm join fetch cm.user where cm.club.id = :clubId and cm.active = true")
+    List<ClubMember> findWithUserByClubIdAndActiveTrue(@Param("clubId") Long clubId);
+
+    // [★추가] 대기 멤버 목록 조회 (User 정보 포함)
+    @Query("select cm from ClubMember cm join fetch cm.user where cm.club.id = :clubId and cm.active = false")
+    List<ClubMember> findWithUserByClubIdAndActiveFalse(@Param("clubId") Long clubId);
+
+    // 칭찬 대상 조회 (ID만 필요)
     @Query("""
         select distinct cm.user.id
         from ClubMember cm
@@ -37,21 +44,11 @@ public interface ClubMemberRepository extends JpaRepository<ClubMember, Long> {
             @Param("excludeUserId") Long excludeUserId
     );
 
-    // 동아리 내 "승인된" 멤버들의 userId 목록 조회 -> 승인된 멤버수 + 이름 목록용
-    @Query("""
-        select cm.user.id
-        from ClubMember cm
-        where cm.club.id = :clubId
-          and cm.active = true
-    """)
+    // 단순 카운트용 (ID만 조회)
+    @Query("select cm.user.id from ClubMember cm where cm.club.id = :clubId and cm.active = true")
     List<Long> findActiveMemberIdsByClubId(@Param("clubId") Long clubId);
 
-    // 동아리 내 "가입 대기 중" 멤버들의 userId 목록 조회 -> 대기 멤버 목록용
-    @Query("""
-        select cm.user.id
-        from ClubMember cm
-        where cm.club.id = :clubId
-          and cm.active = false
-    """)
+    // 대기 멤버 ID 조회
+    @Query("select cm.user.id from ClubMember cm where cm.club.id = :clubId and cm.active = false")
     List<Long> findPendingMemberIdsByClubId(@Param("clubId") Long clubId);
 }

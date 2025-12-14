@@ -30,20 +30,24 @@ public class ClubDtos {
             String requestStatus
     ) { }
 
-    // [신규] 내 동아리 목록용 간단 DTO (MemberRes에 사용)
+    // [신규] 내 동아리 목록용 (MemberRes에서 사용)
     public record ClubSimpleRes(Long id, String name, String university) {
         public static ClubSimpleRes from(Club club) {
-            // university는 현재 DB에 없으므로 null 혹은 고정값 전달 (프론트 요청에 따라 수정 가능)
             return new ClubSimpleRes(club.getId(), club.getName(), null);
         }
     }
 
-    // 멤버 리스트에 사진(avatarUrl)이 있어야 함
+    // [수정] role 필드 추가 (동아리장 구분용)
     public record ClubDetailMember(
             Long userId,
             String name,
-            String avatarUrl
-    ) { }
+            String avatarUrl,
+            String role // "manager" or "member"
+    ) {
+        public static ClubDetailMember of(Long userId, String name, String avatarUrl, String role) {
+            return new ClubDetailMember(userId, name, avatarUrl, role);
+        }
+    }
 
     public record ClubDetailResponse(
             Long clubId,
@@ -60,16 +64,15 @@ public class ClubDtos {
             boolean active,
             int count,
             List<ClubDetailMember> members,
-            List<ClubDetailMember> rankings // [추가] 랭킹 섹션 에러 방지용
+            List<ClubDetailMember> rankings
     ) { }
 
-    // [추가] 검색 결과 DTO
     public record ClubSearchResponse(
             Long clubId,
             String name,
             String description,
             LocalDateTime createdAt,
-            int activeMemberCount // [추가] 검색 카드 UI용
+            int activeMemberCount
     ) {
         public static ClubSearchResponse from(Club club, int activeMemberCount) {
             return new ClubSearchResponse(
@@ -77,7 +80,7 @@ public class ClubDtos {
                     club.getName(),
                     club.getDescription(),
                     club.getCreatedAt(),
-                    activeMemberCount // 추가된 필드 설정
+                    activeMemberCount
             );
         }
     }
