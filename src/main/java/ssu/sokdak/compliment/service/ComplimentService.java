@@ -71,7 +71,7 @@ public class ComplimentService {
 
         // 동아리 후보 풀 (본인 제외)
         List<Long> pool = clubMemberRepository.findActiveMemberIdsExcluding(clubId, senderId);
-        if (pool.size() < 4) throw new IllegalStateException("후보가 4명 미만입니다.");
+        if (pool.size() < 4) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "후보가 4명 미만입니다.");
 
         List<ComplimentGenerateResponse> responses = new ArrayList<>();
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
@@ -178,13 +178,13 @@ public class ComplimentService {
         compliment.updateAnonymity(request.getAnonymity());
     }
 
-    public List<ComplimentHistoryResponse> getSentCompliments(Long memberId) {
-        return complimentRepository.findSentByMemberId(memberId).stream()
+    public List<ComplimentHistoryResponse> getSentCompliments(Long userId) {
+        return complimentRepository.findSentByUserId(userId).stream()
                 .map(c -> {
                     User receiver = c.getReceiver();
                     return ComplimentHistoryResponse.builder()
                             .complimentId(c.getId())
-                            .memberId(receiver.getId())
+                            .userId(receiver.getId())
                             .name(receiver.getName())
                             .message(c.getMessage())
                             .anonymity(c.getAnonymity())
@@ -194,15 +194,15 @@ public class ComplimentService {
                 .toList();
     }
 
-    public List<ComplimentHistoryResponse> getReceivedCompliments(Long memberId) {
-        return complimentRepository.findReceivedByMemberId(memberId).stream()
+    public List<ComplimentHistoryResponse> getReceivedCompliments(Long userId) {
+        return complimentRepository.findReceivedByUserId(userId).stream()
                 .map(c -> {
                     boolean isAnonymous = Boolean.TRUE.equals(c.getAnonymity());
 
                     if (isAnonymous) {
                         return ComplimentHistoryResponse.builder()
                                 .complimentId(c.getId())
-                                .memberId(null)
+                                .userId(null)
                                 .name("익명")
                                 .message(c.getMessage())
                                 .anonymity(true)
@@ -213,7 +213,7 @@ public class ComplimentService {
                     User sender = c.getSender();
                     return ComplimentHistoryResponse.builder()
                             .complimentId(c.getId())
-                            .memberId(sender.getId())
+                            .userId(sender.getId())
                             .name(sender.getName())
                             .message(c.getMessage())
                             .anonymity(false)

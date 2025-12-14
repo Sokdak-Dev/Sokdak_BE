@@ -32,7 +32,9 @@ public class ComplimentController {
 
     @PostMapping("/compliments/clubs/{club_id}/users/{user_id}")
     public ResponseEntity<List<ComplimentGenerateResponse>> createCompliments(@PathVariable("club_id") Long clubId,
-                                                                                @PathVariable("user_id") Long userId) {
+                                                                              HttpSession session) {
+        Long userId = (Long) session.getAttribute(SESSION_KEY);
+        if (userId == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
         List<ComplimentGenerateResponse> responses = complimentService.createCompliments(clubId, userId);
         return ResponseEntity.ok(responses);
     }
@@ -44,16 +46,16 @@ public class ComplimentController {
     }
 
     @GetMapping("/compliments/send")
-    public ResponseEntity<List<ComplimentHistoryResponse>> sent(HttpSession session) {
-        Long memberId = (Long) session.getAttribute(SESSION_KEY);
-        if (memberId == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
-        return ResponseEntity.ok(complimentService.getSentCompliments(memberId));
+    public ResponseEntity<List<ComplimentHistoryResponse>> getSentCompliments(HttpSession session) {
+        Long userId = (Long) session.getAttribute(SESSION_KEY);
+        if (userId == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        return ResponseEntity.ok(complimentService.getSentCompliments(userId));
     }
 
     @GetMapping("/compliments/received")
-    public ResponseEntity<List<ComplimentHistoryResponse>> received(HttpSession session) {
-        Long memberId = (Long) session.getAttribute(SESSION_KEY);
-        if (memberId == null) throw new IllegalStateException("로그인이 필요합니다.");
-        return ResponseEntity.ok(complimentService.getReceivedCompliments(memberId));
+    public ResponseEntity<List<ComplimentHistoryResponse>> getReceivedCompliments(HttpSession session) {
+        Long userId = (Long) session.getAttribute(SESSION_KEY);
+        if (userId == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        return ResponseEntity.ok(complimentService.getReceivedCompliments(userId));
     }
 }
