@@ -17,6 +17,7 @@ public class MemberDtos {
             @NotBlank String name,
             String nickname,
             String avatarUrl,
+            @NotBlank String gender,
             List<CategorySelectionReq> selections // develop에서 추가됨 (유지)
     ) {}
 
@@ -45,7 +46,8 @@ public class MemberDtos {
             String nickname,
             String avatarUrl,
             String status,
-            List<ClubSimpleRes> clubs   // ✅ 동아리 목록 필드 추가
+            @NotBlank String gender,
+            List<ClubSimpleRes> clubs   // 동아리 목록 필드 추가
     ) {
         public static MemberRes from(User u, List<ClubSimpleRes> clubs){
             return new MemberRes(
@@ -55,6 +57,7 @@ public class MemberDtos {
                     u.getNickname(),
                     u.getAvatarUrl(),
                     u.getStatus(),
+                    u.getGender(),
                     clubs
             );
         }
