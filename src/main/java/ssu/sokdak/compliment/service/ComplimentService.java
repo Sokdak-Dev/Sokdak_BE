@@ -186,6 +186,7 @@ public class ComplimentService {
                             .complimentId(c.getId())
                             .userId(receiver.getId())
                             .name(receiver.getName())
+                            .gender(receiver.getGender())
                             .message(c.getMessage())
                             .anonymity(c.getAnonymity())
                             .createdAt(c.getCreatedAt())
@@ -198,23 +199,24 @@ public class ComplimentService {
         return complimentRepository.findReceivedByUserId(userId).stream()
                 .map(c -> {
                     boolean isAnonymous = Boolean.TRUE.equals(c.getAnonymity());
-
+                    User sender = c.getSender();
                     if (isAnonymous) {
                         return ComplimentHistoryResponse.builder()
                                 .complimentId(c.getId())
                                 .userId(null)
                                 .name("익명")
+                                .gender(sender.getGender())
                                 .message(c.getMessage())
                                 .anonymity(true)
                                 .createdAt(c.getCreatedAt())
                                 .build();
                     }
 
-                    User sender = c.getSender();
                     return ComplimentHistoryResponse.builder()
                             .complimentId(c.getId())
                             .userId(sender.getId())
                             .name(sender.getName())
+                            .gender(sender.getGender())
                             .message(c.getMessage())
                             .anonymity(false)
                             .createdAt(c.getCreatedAt())
