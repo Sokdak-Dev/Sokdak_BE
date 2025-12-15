@@ -110,5 +110,16 @@ public interface ComplimentRepository extends JpaRepository<Compliment, Long> {
             @Param("clubId") Long clubId,
             Pageable pageable
     );
+    @Query("""
+    select cm.club.id as clubId, 
+           sum(case when c.sender.id is not null then 1 else 0 end) as sentCount
+    from ClubMember cm
+    join Compliment c on c.sender.id = cm.user.id
+    where cm.club.id is not null
+    group by cm.club.id
+    order by sum(case when c.sender.id is not null then 1 else 0 end) desc
+""")
+    List<Object[]> findTopClubsBySentCount(Pageable pageable);
+
 
 }

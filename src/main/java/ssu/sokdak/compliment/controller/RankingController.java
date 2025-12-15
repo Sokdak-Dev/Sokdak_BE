@@ -60,4 +60,13 @@ public class RankingController {
     ) {
         return ResponseEntity.ok(rankingService.getClubSentRanking(clubId, limit));
     }
+
+    // 4.1.3 동아리별로 칭찬 많이 보낸 동아리 TOP N
+    @GetMapping("/clubs/sent")
+    public ResponseEntity<List<RankingDtos.ClubRankRes>> clubSentRanking(
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        List<RankingDtos.ClubRankRes> clubRankings = rankingService.getClubRankingBySentCount(limit);
+        return ResponseEntity.ok(clubRankings);
+    }
 }
