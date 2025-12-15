@@ -45,6 +45,7 @@ public class MemberService {
                 .nickname(req.nickname())
                 .avatarUrl(req.avatarUrl())
                 .status("active")
+                .gender(req.gender())
                 .build();
         User saved = userRepository.save(user);
 
