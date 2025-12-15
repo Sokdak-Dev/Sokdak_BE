@@ -217,7 +217,7 @@ public class ComplimentService {
                             .userId(receiver.getId())
                             .name(receiver.getName())
                             .gender(receiver.getGender())
-                            .message(c.getMessage())
+                            .message(c.getTemplate().getText())
                             .anonymity(c.getAnonymity())
                             .createdAt(c.getCreatedAt())
                             .build();
@@ -236,7 +236,7 @@ public class ComplimentService {
                                 .userId(null)
                                 .name("익명")
                                 .gender(sender.getGender())
-                                .message(c.getMessage())
+                                .message(c.getTemplate().getText())
                                 .anonymity(true)
                                 .createdAt(c.getCreatedAt())
                                 .build();
@@ -247,7 +247,7 @@ public class ComplimentService {
                             .userId(sender.getId())
                             .name(sender.getName())
                             .gender(sender.getGender())
-                            .message(c.getMessage())
+                            .message(c.getTemplate().getText())
                             .anonymity(false)
                             .createdAt(c.getCreatedAt())
                             .build();
