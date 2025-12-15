@@ -44,25 +44,30 @@ public class MemberController {
 
     // 회원 정보 조회 (id로)
     @GetMapping
-    public ResponseEntity<MemberDtos.MemberRes> get(@RequestParam Long id) {
-        MemberDtos.MemberRes res = memberService.get(id);
+    public ResponseEntity<MemberDtos.MemberRes> get(HttpSession session) {
+        Long memberId = (Long) session.getAttribute(SESSION_KEY);
+        MemberDtos.MemberRes res = memberService.get(memberId);
         return ResponseEntity.ok(res);
     }
 
 
     // 회원 정보 수정
     @PatchMapping
-    public ResponseEntity<MemberDtos.MemberRes> update(@RequestParam Long id,
+    public ResponseEntity<MemberDtos.MemberRes> update(HttpSession session,
                                                        @RequestBody MemberDtos.UpdateReq req) {
-        MemberDtos.MemberRes res = memberService.update(id, req);
+        Long memberId = (Long) session.getAttribute(SESSION_KEY);
+        if (memberId == null) throw new IllegalStateException("로그인이 필요합니다.");
+        MemberDtos.MemberRes res = memberService.update(memberId, req);
         return ResponseEntity.ok(res);
     }
 
 
     // 회원 탈퇴(비활성화)
     @DeleteMapping
-    public ResponseEntity<Void> deactivate(@RequestParam Long id) {
-        memberService.deactivate(id);
+    public ResponseEntity<Void> deactivate(HttpSession session) {
+        Long memberId = (Long) session.getAttribute(SESSION_KEY);
+        if (memberId == null) throw new IllegalStateException("로그인이 필요합니다.");
+        memberService.deactivate(memberId);
         return ResponseEntity.noContent().build();
     }
 
