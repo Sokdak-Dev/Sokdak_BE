@@ -23,6 +23,8 @@ public class Badge {
     private String name;
 
     private String description;
+
+    @Column(length = 4096)
     private String iconUrl;
 
     @Column(name = "badge_condition", columnDefinition = "json")
