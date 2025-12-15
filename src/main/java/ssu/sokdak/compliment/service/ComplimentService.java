@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import ssu.sokdak.badge.service.BadgeService;
 import ssu.sokdak.category.domain.Category;
 import ssu.sokdak.category.dto.CategoryContext;
 import ssu.sokdak.category.repository.CategoryRepository;
@@ -28,6 +29,7 @@ import ssu.sokdak.user.repository.UserCategorySelectionRepository;
 import ssu.sokdak.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
@@ -48,6 +50,7 @@ public class ComplimentService {
     private final ComplimentRepository complimentRepository;
     private final VectorStore vectorStore;
     private final ObjectMapper objectMapper;
+    private final BadgeService badgeService;
 
     public void saveComplimentTemplate(String text, String reqCategory) {
 
@@ -206,6 +209,7 @@ public class ComplimentService {
         compliment.updateReceiver(user);
 
         compliment.updateAnonymity(request.getAnonymity());
+        badgeService.evaluateAndGrantOnCompliment(compliment.getSender().getId(), user.getId(), LocalDateTime.now(ZoneId.of("Asia/Seoul")));
     }
 
     public List<ComplimentHistoryResponse> getSentCompliments(Long userId) {
