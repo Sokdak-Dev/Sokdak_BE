@@ -4,9 +4,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ssu.sokdak.club.domain.Club;
+import ssu.sokdak.club.repository.ClubMemberRepository;
+import ssu.sokdak.club.repository.ClubRepository;
 import ssu.sokdak.compliment.dto.RankingDtos;
 import ssu.sokdak.compliment.repository.ComplimentRepository;
 import ssu.sokdak.user.repository.UserRepository;
+
 
 import java.util.List;
 import java.util.Map;
@@ -20,6 +24,8 @@ public class RankingService {
 
     private final ComplimentRepository complimentRepository;
     private final UserRepository userRepository;
+    private final ClubMemberRepository clubMemberRepository;
+    private final ClubRepository clubRepository;
 
     /**
      * 4.1.1 앱 전체 랭킹
@@ -163,6 +169,29 @@ public class RankingService {
                     );
                 })
                 .toList();
+    }
+    // 동아리별 총 칭찬 수 랭킹
+    public List<RankingDtos.ClubRankRes> getClubRankingBySentCount(int limit) {
+        List<Object[]> results = complimentRepository.findTopClubsBySentCount(PageRequest.of(0, limit));
+
+        // 동아리별로 칭찬 수를 계산하여 DTO에 반환
+        return results.stream()
+                .map(result -> {
+                    Long clubId = (Long) result[0];
+                    Long sentCount = (Long) result[1];
+
+                    // Club 정보 가져오기 (ClubRepository가 필요하면 추가)
+                    Club club =clubRepository.findById(clubId).orElseThrow();
+
+                    return new RankingDtos.ClubRankRes(
+                            1,  // 순위는 처리 후 부여될 것
+                            clubId,
+                            club.getName(),
+                            null,  // club 정보에 avatarUrl이 있다면
+                            sentCount
+                    );
+                })
+                .collect(Collectors.toList());
     }
 }
 
